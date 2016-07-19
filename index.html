@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width">
+    <title>Ana</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/foundation/6.2.0/foundation-flex.min.css" type="text/css" media="all" />
+    <script type="text/javascript" src="https://code.jquery.com/jquery-1.12.0.min.js"></script>
+  </head>
+  <body>
+    <div class="row">
+        <h1 class="column">
+          Anagram
+        </h1>
+    </div>
+    <div class="row">
+      <form class="column">
+        <label for="letters">Letters</label>
+        <input type="text" id="letters">
+        <label for="minLength">Min length</label>
+        <input type="text" id="minLength">
+        <label for="maxLength">Max length</label>
+        <input type="text" id="maxLength">
+        <label for="sort">Sort</label>
+        <select id="sort">
+          <option value="length" selected>Length</option>
+          <option value="rand">Rand</option>
+        </select>
+        <label for="unique">
+            <input type="checkbox" id="unique" value=1>
+            Unique characters
+        </label>
+        <input type="submit" id="send" class="button">
+      </form>
+
+      <ul id="list" class="column">
+      </ul>
+
+    </div>
+    <script>
+      'use strict'
+      const storage = {
+        get letters() {
+          if (localStorage)
+            return ''
+
+          return localStorage.getItem('letters')
+        },
+
+        set letters(v) {
+          if (localStorage)
+            return
+
+          return localStorage.setItem('letters', v)
+        }
+      }
+
+      function ana(letters, min, max) {
+        let l = letters.length
+        min = min ? min : 1
+        max = max ? max : Infinity
+        let possibilities = Math.pow(2, l)
+        let results = [letters]
+        let mask = 0
+
+        for (; mask < possibilities; mask++) {
+          let result = []
+          let i = l
+
+          while (i--) {
+            if ((mask & (1 << i)) !== 0) {
+              result.push(letters[i])
+            }
+          }
+
+          let rLength = result.length
+
+          if (rLength < min || rLength > max)
+            continue
+
+          let has = ~results.findIndex(e => {
+            let i = e.length
+
+            if (i < rLength)
+              return false
+
+            let ok = true
+            while (ok == true && i--) {
+              if (!result[i] || result[i] != e[i])
+                ok = false
+            }
+
+            return ok
+          })
+
+          if (!has)
+            results.push(result)
+        }
+
+        return results
+      }
+
+      (function($) {
+        'use strict'
+        const stringToArray = function() {
+          return new Array(this.length).fill(0).map((e, i) => {
+            return this[i]
+          })
+        }
+
+        function run(event) {
+          if (event)
+            event.preventDefault()
+
+          $('#list').empty()
+          let letters = $letters.val().replace(/[^\w]|_/g, '')
+          storage.letters = letters
+          let min = parseInt($('#minLength').val(), 10)
+          let unique = $('#unique').prop('checked')
+          let sort = $('#sort').val()
+
+          letters = stringToArray.call(letters)
+          if (unique === true) letters = jQuery.unique(letters)
+
+          let words = ana(letters, min)
+
+          if (sort)
+            words.sort((a, b) => {
+
+              if (sort == 'rand') {
+                return Math.random() * 10 & 1
+              }
+
+              return a.length - b.length
+            })
+
+          words.forEach((word, i) => {
+            let item = $('<li></li>').text(word.join(''))
+            $('#list').append(item)
+          })
+        }
+
+        const $letters = $('#letters')
+        $letters.val(storage.letters)
+
+        $('#send').on('click', function(event) {
+          run(event)
+        })
+
+        $('input[type=checkbox], select').on('change', function(event) {
+          run()
+        })
+
+        $('input[type=text]').on('keyup', function(event) {
+          if (event.charCode == 12 || event.shiftKey === true || event.altKey === true || event.altKey === true)
+            return false
+
+          run()
+        })
+      })(jQuery)
+
+    </script>
+  </body>
+</html>
